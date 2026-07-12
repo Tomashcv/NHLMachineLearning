@@ -1,0 +1,74 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Secrets and environment variables
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+credentials.json
+secrets.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+
+# Operating system
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/*
+!logs/.gitkeep
+
+# Raw and processed data
+data/raw/*
+data/interim/*
+data/processed/*
+data/external/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
+
+# Licensed or private market data
+storage/raw/*
+storage/odds/*
+storage/private/*
+!storage/raw/.gitkeep
+!storage/odds/.gitkeep
+!storage/private/.gitkeep
+
+# Generated outputs
+outputs/*
+reports/generated/*
+!outputs/.gitkeep
+!reports/generated/.gitkeep
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
