@@ -1,0 +1,69 @@
+schema_version: "1.0"
+
+sources:
+  - source_id: nhl_web
+    name: NHL web data endpoints
+    category: game_data
+    audit_status: pending_terms_review
+    automation_status: blocked_until_approved
+    redistribution_status: prohibited_until_review
+    research_only: true
+    notes: >
+      Candidate source for schedules, results, boxscores and play-by-play.
+      Automated backfill is blocked until the access method and terms are audited.
+
+  - source_id: moneypuck_downloads
+    name: MoneyPuck downloadable files
+    category: advanced_statistics
+    audit_status: candidate_noncommercial_source
+    automation_status: approved_download_files_only
+    redistribution_status: do_not_redistribute_raw
+    research_only: true
+    notes: >
+      Candidate source for shots, coordinates and expected-goals data.
+      Every downloaded file must retain retrieval time, hash and provider version notes.
+
+  - source_id: betfair_historical
+    name: Betfair historical market data
+    category: market_data
+    audit_status: account_access_confirmed
+    automation_status: manual_download_only
+    redistribution_status: do_not_redistribute
+    research_only: true
+    notes: >
+      Historical market data may be used for research and market baselines.
+      Raw files, credentials, certificates and session tokens must remain private.
+      No claim of executable betting in Portugal is permitted.
+
+  - source_id: the_odds_api
+    name: The Odds API
+    category: market_data
+    audit_status: candidate_paid_source
+    automation_status: blocked_until_plan_review
+    redistribution_status: do_not_redistribute_raw
+    research_only: true
+    notes: >
+      Candidate source for timestamped bookmaker snapshots.
+      Coverage and credit cost must be tested with the small pilot first.
+
+  - source_id: sportradar
+    name: Sportradar NHL API
+    category: commercial_game_data
+    audit_status: commercial_candidate
+    automation_status: blocked_until_contract
+    redistribution_status: contract_dependent
+    research_only: true
+    notes: >
+      Candidate professional feed. No ingestion is allowed without confirming
+      price, historical coverage, timestamps and storage rights.
+
+  - source_id: sportsdataio
+    name: SportsDataIO NHL API
+    category: commercial_game_and_market_data
+    audit_status: commercial_candidate
+    automation_status: blocked_until_contract
+    redistribution_status: contract_dependent
+    research_only: true
+    notes: >
+      Candidate feed for goalies, injuries, line combinations and odds.
+      Historical as-of coverage must be confirmed before use.

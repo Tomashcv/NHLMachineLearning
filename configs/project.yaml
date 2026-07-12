@@ -1,0 +1,16 @@
+schema_version: "1.0"
+
+project:
+  name: NHLMachineLearning
+  canonical_timezone: UTC
+  primary_market: full_game_moneyline
+
+decision_cutoffs:
+  early_minutes_before_start: 360
+  pregame_minutes_before_start: 60
+
+pilot:
+  target_games: 40
+  minimum_seasons: 5
+  include_regular_season: true
+  include_playoffs: true
