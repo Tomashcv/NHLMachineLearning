@@ -1,0 +1,55 @@
+{
+  "currentDate": "2025-01-11",
+  "games": [
+    {
+      "id": 2024020701,
+      "season": 20242025,
+      "gameType": 2,
+      "startTimeUTC": "2025-01-11T17:00:00Z",
+      "gameState": "OFF",
+      "awayTeam": {"id": 1, "abbrev": "AAA", "score": 1},
+      "homeTeam": {"id": 2, "abbrev": "BBB", "score": 4},
+      "gameOutcome": {"lastPeriodType": "REG"}
+    },
+    {
+      "id": 2024020702,
+      "season": 20242025,
+      "gameType": 2,
+      "startTimeUTC": "2025-01-11T18:00:00Z",
+      "gameState": "OFF",
+      "awayTeam": {"id": 3, "abbrev": "CCC", "score": 3},
+      "homeTeam": {"id": 4, "abbrev": "DDD", "score": 2},
+      "gameOutcome": {"lastPeriodType": "OT"}
+    },
+    {
+      "id": 2024020703,
+      "season": 20242025,
+      "gameType": 2,
+      "startTimeUTC": "2025-01-11T19:00:00Z",
+      "gameState": "OFF",
+      "awayTeam": {"id": 5, "abbrev": "EEE", "score": 2},
+      "homeTeam": {"id": 6, "abbrev": "FFF", "score": 3},
+      "gameOutcome": {"lastPeriodType": "SO"}
+    },
+    {
+      "id": 2024020704,
+      "season": 20242025,
+      "gameType": 2,
+      "startTimeUTC": "2025-01-11T20:00:00Z",
+      "gameState": "OFF",
+      "awayTeam": {"id": 7, "abbrev": "GGG", "score": 2},
+      "homeTeam": {"id": 8, "abbrev": "HHH", "score": 5},
+      "gameOutcome": {"lastPeriodType": "REG"}
+    },
+    {
+      "id": 2024020705,
+      "season": 20242025,
+      "gameType": 2,
+      "startTimeUTC": "2025-01-11T21:00:00Z",
+      "gameState": "OFF",
+      "awayTeam": {"id": 1, "abbrev": "AAA", "score": 3},
+      "homeTeam": {"id": 3, "abbrev": "CCC", "score": 1},
+      "gameOutcome": {"lastPeriodType": "REG"}
+    }
+  ]
+}

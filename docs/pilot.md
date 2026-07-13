@@ -79,3 +79,22 @@ Final games must explicitly identify whether the last period type was:
 - `SO`.
 
 The parser must not infer overtime or shootout solely from the final score.
+
+## Five-game pilot selection
+
+The first real pilot contains five final games selected deterministically.
+
+The selector prioritizes:
+
+1. one regulation game;
+2. one overtime game without a shootout;
+3. one shootout game;
+4. the earliest remaining final games.
+
+If one of the required outcome types is unavailable, the pilot remains usable
+for structural validation but is classified as incomplete outcome coverage.
+
+Team IDs are treated as canonical identities.
+
+Team abbreviations are stored only as observed aliases because names and
+abbreviations may change historically.
