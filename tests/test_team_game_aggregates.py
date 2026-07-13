@@ -461,3 +461,52 @@ def test_unknown_event_owner_team_is_rejected(
             output_path=tmp_path / "output.jsonl",
             audit_path=tmp_path / "audit.json",
         )
+
+
+def test_blocked_shot_is_an_attempt_by_owner_team(
+    tmp_path: Path,
+) -> None:
+    result = build_fixture(tmp_path)
+
+    rows = [
+        json.loads(line)
+        for line in Path(result.output_path).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+    away = next(row for row in rows if row["game_id"] == "1001" and row["team_id"] == "1")
+    home = next(row for row in rows if row["game_id"] == "1001" and row["team_id"] == "2")
+
+    assert "blocked_shots" not in away
+    assert "blocked_shots" not in home
+
+    assert away["blocked_shot_attempts"] == 0
+    assert home["blocked_shot_attempts"] == 1
+
+
+def test_shot_attempt_identity_includes_goals_without_shot_type(
+    tmp_path: Path,
+) -> None:
+    result = build_fixture(tmp_path)
+
+    rows = [
+        json.loads(line)
+        for line in Path(result.output_path).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+    for row in rows:
+        assert row["shot_attempt_events"] == (
+            row["pbp_shots_on_goal"]
+            + row["goals_without_shot_type"]
+            + row["missed_shots"]
+            + row["blocked_shot_attempts"]
+        )
+
+        assert row["unblocked_shot_attempt_events"] == (
+            row["pbp_shots_on_goal"] + row["goals_without_shot_type"] + row["missed_shots"]
+        )
+
+    audit = json.loads(Path(result.audit_path).read_text(encoding="utf-8"))
+
+    assert audit["gates"]["passes_shot_attempt_identity"] is True
