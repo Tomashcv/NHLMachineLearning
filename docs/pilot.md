@@ -152,3 +152,44 @@ is deliberately not inferred from regulation and overtime goal events.
 A goal without `goalieInNetId` is classified only as an
 `empty_net_candidate`. It is not treated as definitively empty-net until the
 situation state and goalie information are audited.
+
+## Five-game play-by-play batch
+
+The first PBP batch contains the five real games previously selected for the
+small result pilot.
+
+It includes:
+
+- three regulation games;
+- one overtime game;
+- one shootout game.
+
+The batch is approved only if:
+
+- raw and canonical event counts match;
+- every official shots-on-goal total reconciles;
+- every non-shootout final score reconciles;
+- shootout score reconciliation is explicitly not applicable;
+- observed period types match the expected result type;
+- regulation, overtime and shootout are all represented;
+- core team-owned events retain a team identifier.
+
+The batch retains individual raw hashes, canonical hashes and one aggregate
+batch hash.
+
+### Goals without a provider shot type
+
+A goal is not automatically treated as a shot on goal when the provider does
+not supply a `shotType`.
+
+The five-game pilot identified one real example in game `2024020672`:
+
+- Vancouver had 16 `shot-on-goal` events;
+- Vancouver had three goal events;
+- one goal had no provider `shotType`;
+- the official final total was 18 shots on goal.
+
+The canonical goal event is retained unchanged. For team-game SOG
+reconciliation, non-shootout goals are counted only when the provider supplies
+a shot type. Goals without a shot type are separately counted in the audit and
+must not be silently deleted or reclassified.
