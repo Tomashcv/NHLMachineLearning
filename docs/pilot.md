@@ -98,3 +98,27 @@ Team IDs are treated as canonical identities.
 
 Team abbreviations are stored only as observed aliases because names and
 abbreviations may change historically.
+
+## Single-game play-by-play audit
+
+The first play-by-play pilot uses game `2024020669`, an overtime game already
+validated in the canonical result pilot.
+
+The raw play-by-play file is saved manually and processed offline.
+
+The structural audit records:
+
+- top-level payload keys;
+- event count;
+- event types;
+- regulation and overtime period types;
+- event and sort-order completeness;
+- duplicate event IDs;
+- available detail fields;
+- coordinate coverage;
+- team IDs and final scoreboard values.
+
+No event is converted into a modelling feature at this stage.
+
+The purpose is to inspect the real provider schema before defining canonical
+shot, goal, penalty or faceoff records.

@@ -1,0 +1,83 @@
+{
+  "id": 2024020669,
+  "season": 20242025,
+  "gameType": 2,
+  "gameDate": "2025-01-11",
+  "startTimeUTC": "2025-01-11T18:00:00Z",
+  "gameState": "OFF",
+  "awayTeam": {
+    "id": 6,
+    "abbrev": "BOS",
+    "score": 4,
+    "sog": 30
+  },
+  "homeTeam": {
+    "id": 13,
+    "abbrev": "FLA",
+    "score": 3,
+    "sog": 28
+  },
+  "plays": [
+    {
+      "eventId": 1,
+      "sortOrder": 10,
+      "typeDescKey": "period-start",
+      "periodDescriptor": {
+        "number": 1,
+        "periodType": "REG"
+      },
+      "timeInPeriod": "00:00"
+    },
+    {
+      "eventId": 2,
+      "sortOrder": 20,
+      "typeDescKey": "shot-on-goal",
+      "periodDescriptor": {
+        "number": 1,
+        "periodType": "REG"
+      },
+      "timeInPeriod": "02:10",
+      "details": {
+        "eventOwnerTeamId": 6,
+        "shootingPlayerId": 101,
+        "goalieInNetId": 201,
+        "xCoord": 74,
+        "yCoord": 8
+      }
+    },
+    {
+      "eventId": 3,
+      "sortOrder": 30,
+      "typeDescKey": "goal",
+      "periodDescriptor": {
+        "number": 3,
+        "periodType": "REG"
+      },
+      "timeInPeriod": "18:22",
+      "details": {
+        "eventOwnerTeamId": 13,
+        "scoringPlayerId": 102,
+        "goalieInNetId": 202,
+        "xCoord": 80,
+        "yCoord": -3
+      }
+    },
+    {
+      "eventId": 4,
+      "sortOrder": 40,
+      "typeDescKey": "goal",
+      "periodDescriptor": {
+        "number": 4,
+        "periodType": "OT"
+      },
+      "timeInPeriod": "03:41",
+      "details": {
+        "eventOwnerTeamId": 6,
+        "scoringPlayerId": 103,
+        "goalieInNetId": 202,
+        "xCoord": 82,
+        "yCoord": 1
+      }
+    }
+  ]
+}
