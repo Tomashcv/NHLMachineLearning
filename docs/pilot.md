@@ -214,3 +214,25 @@ batch.
 
 No network retrieval is performed by the project. The audit only inspects
 manually saved local JSON files.
+
+## Forty-game play-by-play batch
+
+After local download coverage reaches forty out of forty valid files, the
+generic offline PBP batch processor is applied to the frozen multiseason
+manifest.
+
+The forty-game batch requires:
+
+- exactly forty unique game IDs;
+- raw and canonical event-count equality;
+- expected regulation, overtime and shootout outcomes;
+- official shots-on-goal reconciliation;
+- applicable final-score reconciliation;
+- no missing team identifier in core team-owned events;
+- deterministic per-game and aggregate hashes.
+
+All raw JSON, canonical event files, manifests and local audits remain outside
+version control.
+
+A failed reconciliation remains visible in the aggregate audit. No tolerance
+is introduced merely to force the batch to pass.
