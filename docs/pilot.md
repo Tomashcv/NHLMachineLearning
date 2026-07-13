@@ -318,3 +318,44 @@ The following identity is enforced for every team-game row:
 
 Goals without provider shot type remain shot attempts, even though they are
 excluded from provider-defined shots on goal.
+
+## Leakage-safe pre-game rolling team features
+
+Team-game post-match aggregates are transformed into pre-game rolling
+features using a conservative temporal availability rule.
+
+For a game on a given UTC calendar date, eligible history is restricted to:
+
+- the same team;
+- the same NHL season;
+- games scheduled on strictly earlier UTC calendar dates.
+
+Games from the same UTC date are excluded even when their scheduled start time
+is earlier. This avoids relying on an assumed game duration or an unavailable
+verified completion timestamp.
+
+The feature output includes:
+
+- season-to-date history;
+- last-three-game history;
+- last-five-game history;
+- win rate;
+- goals for and against;
+- shots on goal for and against;
+- shot attempts for and against;
+- blocked shot attempts for and against;
+- shooting percentage;
+- save-percentage proxy;
+- shot-attempt share;
+- faceoff win percentage;
+- penalties and penalty minutes;
+- hits, giveaways and takeaways;
+- previous-game timing;
+- exact game-ID lineage for every rolling window.
+
+No current-game result or current-game PBP statistic is included in the
+pre-game feature row.
+
+The forty-game pilot validates the temporal and lineage machinery only. Its
+sparse selected-game history is not sufficient for model training or betting
+evaluation.
