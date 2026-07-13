@@ -193,3 +193,24 @@ The canonical goal event is retained unchanged. For team-game SOG
 reconciliation, non-shootout goals are counted only when the provider supplies
 a shot type. Goals without a shot type are separately counted in the audit and
 must not be silently deleted or reclassified.
+
+## Forty-game play-by-play manifest
+
+The frozen forty-game result pilot is converted into a deterministic PBP
+download manifest before any larger batch is processed.
+
+The manifest retains:
+
+- source selection ID and SHA-256;
+- exactly forty unique game IDs;
+- season and game type;
+- scheduled UTC start;
+- expected regulation, overtime or shootout outcome;
+- deterministic local filename.
+
+A separate offline coverage audit classifies files as valid, missing, invalid
+or unexpected. A partial download directory is not treated as a completed PBP
+batch.
+
+No network retrieval is performed by the project. The audit only inspects
+manually saved local JSON files.
