@@ -31,7 +31,7 @@ class PilotSelectionConfig:
     season_quotas: dict[str, int]
 
     @classmethod
-    def from_path(cls, path: Path) -> "PilotSelectionConfig":
+    def from_path(cls, path: Path) -> PilotSelectionConfig:
         payload = load_yaml(path)
 
         try:
