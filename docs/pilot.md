@@ -236,3 +236,36 @@ version control.
 
 A failed reconciliation remains visible in the aggregate audit. No tolerance
 is introduced merely to force the batch to pass.
+
+## Team-game aggregates from canonical PBP
+
+The forty-game canonical event batch is reduced to exactly two team-game rows
+per game.
+
+Each row contains event-derived counts for:
+
+- non-shootout goals;
+- official and event-derived shots on goal;
+- shot attempts, missed shots and blocked shots;
+- shot coordinate coverage;
+- penalties and penalty minutes;
+- delayed penalties;
+- faceoff wins;
+- hits;
+- giveaways and takeaways;
+- conservative empty-net goal candidates;
+- regulation, overtime and shootout owned-event counts.
+
+Official team-game score and shots-on-goal values remain separate from
+event-derived values.
+
+Shootout final-score reconciliation is marked as not applicable because the
+official winner receives a shootout score increment that is not a normal goal
+event.
+
+A goal without a provider shot type remains a goal and a shot-attempt event,
+but is not counted as a provider-defined shot on goal.
+
+These rows are post-game aggregates. They are not yet safe pre-game model
+features. Any later rolling feature must use only rows from games completed
+before the prediction timestamp.
