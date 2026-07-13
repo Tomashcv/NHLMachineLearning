@@ -1,0 +1,205 @@
+{
+  "id": 2024020999,
+  "season": 20242025,
+  "gameType": 2,
+  "gameDate": "2025-02-01",
+  "startTimeUTC": "2025-02-01T18:00:00Z",
+  "gameState": "OFF",
+  "awayTeam": {
+    "id": 6,
+    "abbrev": "AWY",
+    "score": 2,
+    "sog": 3
+  },
+  "homeTeam": {
+    "id": 13,
+    "abbrev": "HME",
+    "score": 1,
+    "sog": 2
+  },
+  "plays": [
+    {
+      "eventId": 1,
+      "sortOrder": 10,
+      "typeDescKey": "period-start",
+      "periodDescriptor": {
+        "number": 1,
+        "periodType": "REG"
+      },
+      "timeInPeriod": "00:00",
+      "timeRemaining": "20:00"
+    },
+    {
+      "eventId": 2,
+      "sortOrder": 20,
+      "typeDescKey": "shot-on-goal",
+      "periodDescriptor": {
+        "number": 1,
+        "periodType": "REG"
+      },
+      "timeInPeriod": "02:00",
+      "timeRemaining": "18:00",
+      "situationCode": "1551",
+      "details": {
+        "eventOwnerTeamId": 6,
+        "shootingPlayerId": 101,
+        "goalieInNetId": 201,
+        "shotType": "wrist",
+        "xCoord": 74,
+        "yCoord": 8,
+        "zoneCode": "O"
+      }
+    },
+    {
+      "eventId": 3,
+      "sortOrder": 30,
+      "typeDescKey": "blocked-shot",
+      "periodDescriptor": {
+        "number": 1,
+        "periodType": "REG"
+      },
+      "timeInPeriod": "04:00",
+      "timeRemaining": "16:00",
+      "details": {
+        "eventOwnerTeamId": 13,
+        "shootingPlayerId": 102,
+        "blockingPlayerId": 103,
+        "xCoord": 61,
+        "yCoord": -5,
+        "zoneCode": "O"
+      }
+    },
+    {
+      "eventId": 4,
+      "sortOrder": 40,
+      "typeDescKey": "goal",
+      "periodDescriptor": {
+        "number": 1,
+        "periodType": "REG"
+      },
+      "timeInPeriod": "08:00",
+      "timeRemaining": "12:00",
+      "details": {
+        "eventOwnerTeamId": 6,
+        "scoringPlayerId": 104,
+        "goalieInNetId": 201,
+        "shotType": "snap",
+        "awayScore": 1,
+        "homeScore": 0,
+        "awaySOG": 2,
+        "homeSOG": 0,
+        "xCoord": 81,
+        "yCoord": 2,
+        "zoneCode": "O"
+      }
+    },
+    {
+      "eventId": 5,
+      "sortOrder": 50,
+      "typeDescKey": "shot-on-goal",
+      "periodDescriptor": {
+        "number": 2,
+        "periodType": "REG"
+      },
+      "timeInPeriod": "05:00",
+      "timeRemaining": "15:00",
+      "details": {
+        "eventOwnerTeamId": 13,
+        "shootingPlayerId": 105,
+        "goalieInNetId": 202,
+        "shotType": "slap",
+        "xCoord": -72,
+        "yCoord": 4,
+        "zoneCode": "O"
+      }
+    },
+    {
+      "eventId": 6,
+      "sortOrder": 60,
+      "typeDescKey": "penalty",
+      "periodDescriptor": {
+        "number": 2,
+        "periodType": "REG"
+      },
+      "timeInPeriod": "12:00",
+      "timeRemaining": "08:00",
+      "details": {
+        "eventOwnerTeamId": 6,
+        "committedByPlayerId": 106,
+        "drawnByPlayerId": 107,
+        "duration": 2,
+        "descKey": "tripping",
+        "typeCode": "MIN"
+      }
+    },
+    {
+      "eventId": 7,
+      "sortOrder": 70,
+      "typeDescKey": "goal",
+      "periodDescriptor": {
+        "number": 3,
+        "periodType": "REG"
+      },
+      "timeInPeriod": "10:00",
+      "timeRemaining": "10:00",
+      "details": {
+        "eventOwnerTeamId": 13,
+        "scoringPlayerId": 108,
+        "shotType": "wrist",
+        "awayScore": 1,
+        "homeScore": 1,
+        "awaySOG": 2,
+        "homeSOG": 2,
+        "xCoord": -80,
+        "yCoord": -1,
+        "zoneCode": "O"
+      }
+    },
+    {
+      "eventId": 8,
+      "sortOrder": 80,
+      "typeDescKey": "goal",
+      "periodDescriptor": {
+        "number": 3,
+        "periodType": "REG"
+      },
+      "timeInPeriod": "19:00",
+      "timeRemaining": "01:00",
+      "details": {
+        "eventOwnerTeamId": 6,
+        "scoringPlayerId": 109,
+        "goalieInNetId": 201,
+        "shotType": "wrist",
+        "awayScore": 2,
+        "homeScore": 1,
+        "awaySOG": 3,
+        "homeSOG": 2,
+        "xCoord": 84,
+        "yCoord": 0,
+        "zoneCode": "O"
+      }
+    },
+    {
+      "eventId": 9,
+      "sortOrder": 90,
+      "typeDescKey": "period-end",
+      "periodDescriptor": {
+        "number": 3,
+        "periodType": "REG"
+      },
+      "timeInPeriod": "20:00",
+      "timeRemaining": "00:00"
+    },
+    {
+      "eventId": 10,
+      "sortOrder": 100,
+      "typeDescKey": "game-end",
+      "periodDescriptor": {
+        "number": 3,
+        "periodType": "REG"
+      },
+      "timeInPeriod": "20:00",
+      "timeRemaining": "00:00"
+    }
+  ]
+}

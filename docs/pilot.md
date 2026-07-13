@@ -122,3 +122,33 @@ No event is converted into a modelling feature at this stage.
 
 The purpose is to inspect the real provider schema before defining canonical
 shot, goal, penalty or faceoff records.
+
+## Canonical play-by-play events
+
+Each provider play is converted into one canonical event while preserving:
+
+- game ID;
+- event ID;
+- source order and sort order;
+- event type;
+- period number and period type;
+- period clock;
+- event-owning team;
+- player identifiers;
+- coordinates;
+- shot type;
+- penalty information;
+- score and shot snapshots;
+- raw-file lineage.
+
+Official shots on goal are reconciled using:
+
+`shot-on-goal events + goal events`, excluding shootout events.
+
+Goals are reconciled against the official final score for games without a
+shootout. Shootout score reconciliation requires separate settlement logic and
+is deliberately not inferred from regulation and overtime goal events.
+
+A goal without `goalieInNetId` is classified only as an
+`empty_net_candidate`. It is not treated as definitively empty-net until the
+situation state and goalie information are audited.
