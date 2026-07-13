@@ -1,0 +1,26 @@
+schema_version: "1.0"
+
+batch:
+  batch_id: five_game_pbp_v1
+  expected_game_count: 5
+
+games:
+  - game_id: "2024020669"
+    expected_outcome: overtime_only
+    source_filename: nhl_pbp_2024020669.json
+
+  - game_id: "2024020670"
+    expected_outcome: regulation
+    source_filename: nhl_pbp_2024020670.json
+
+  - game_id: "2024020671"
+    expected_outcome: regulation
+    source_filename: nhl_pbp_2024020671.json
+
+  - game_id: "2024020672"
+    expected_outcome: regulation
+    source_filename: nhl_pbp_2024020672.json
+
+  - game_id: "2024020673"
+    expected_outcome: shootout
+    source_filename: nhl_pbp_2024020673.json
