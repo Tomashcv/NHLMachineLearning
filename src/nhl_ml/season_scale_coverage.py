@@ -8,9 +8,10 @@ import os
 import re
 import tempfile
 from collections import Counter, defaultdict
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 
 class SeasonScaleCoverageError(ValueError):
