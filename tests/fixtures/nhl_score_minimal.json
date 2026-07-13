@@ -1,0 +1,22 @@
+{
+  "currentDate": "2025-01-11",
+  "games": [
+    {
+      "id": 9999999999,
+      "season": 20242025,
+      "gameType": 2,
+      "gameDate": "2025-01-11",
+      "gameState": "OFF",
+      "awayTeam": {
+        "id": 101,
+        "abbrev": "AWY",
+        "score": 2
+      },
+      "homeTeam": {
+        "id": 102,
+        "abbrev": "HME",
+        "score": 3
+      }
+    }
+  ]
+}

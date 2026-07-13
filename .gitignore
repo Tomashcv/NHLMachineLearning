@@ -72,3 +72,7 @@ tmp/
 temp/
 *.tmp
 *.bak
+
+# Local ingestion manifests
+storage/manifests/local/*
+!storage/manifests/local/.gitkeep
