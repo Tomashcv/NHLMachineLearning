@@ -292,3 +292,29 @@ This validation determines whether existing aggregate names represent actions
 performed by a team or actions attempted against an opponent. No metric is
 accepted as a modelling feature solely because its provider event name appears
 intuitive.
+
+## Corrected blocked-shot aggregate semantics
+
+The forty-game player-team semantic audit confirmed that
+`eventOwnerTeamId` on a `blocked-shot` event identifies the team of the
+shooting player.
+
+Therefore, an owner-team `blocked-shot` count represents a shot attempt by
+that team that was blocked. It does not represent a defensive block made by
+that team.
+
+The aggregate field formerly named `blocked_shots` is renamed to
+`blocked_shot_attempts`.
+
+No `blocks_made` metric is inferred from the opponent team because some
+blocked-shot events contain shooting and blocking players mapped to the same
+team. A defensive-block metric would require a separately validated
+player-role aggregation.
+
+The following identity is enforced for every team-game row:
+
+`shot_attempt_events = pbp_shots_on_goal + goals_without_shot_type
++ missed_shots + blocked_shot_attempts`
+
+Goals without provider shot type remain shot attempts, even though they are
+excluded from provider-defined shots on goal.

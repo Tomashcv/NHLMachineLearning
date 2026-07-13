@@ -195,7 +195,7 @@ def _new_team_metrics() -> dict[str, int]:
         "shot_attempt_events": 0,
         "shot_attempts_with_coordinates": 0,
         "missed_shots": 0,
-        "blocked_shots": 0,
+        "blocked_shot_attempts": 0,
         "penalties": 0,
         "penalty_minutes": 0,
         "penalties_without_duration": 0,
@@ -254,7 +254,7 @@ def _aggregate_event(
     if event_type == "missed-shot":
         metrics["missed_shots"] += 1
     elif event_type == "blocked-shot":
-        metrics["blocked_shots"] += 1
+        metrics["blocked_shot_attempts"] += 1
     elif event_type == "penalty":
         metrics["penalties"] += 1
 
@@ -501,7 +501,7 @@ def build_team_game_aggregates(
 
             aggregate_rows.append(
                 {
-                    "schema_version": "1.0",
+                    "schema_version": "1.1",
                     "batch_id": batch_id,
                     "source_selection_id": (source_selection_id),
                     "source_selection_sha256": (source_selection_sha256),
@@ -520,7 +520,9 @@ def build_team_game_aggregates(
                     "sog_reconciliation_passed": (game_sog_reconciled),
                     **metrics,
                     "unblocked_shot_attempt_events": (
-                        metrics["pbp_shots_on_goal"] + metrics["missed_shots"]
+                        metrics["pbp_shots_on_goal"]
+                        + metrics["goals_without_shot_type"]
+                        + metrics["missed_shots"]
                     ),
                     "shot_coordinate_coverage": (
                         attempts_with_coordinates / attempts if attempts else None
@@ -582,11 +584,23 @@ def build_team_game_aggregates(
         game["score_reconciliation_passed"] for game in game_audits
     )
 
+    shot_attempt_identity_passed = all(
+        row["shot_attempt_events"]
+        == (
+            row["pbp_shots_on_goal"]
+            + row["goals_without_shot_type"]
+            + row["missed_shots"]
+            + row["blocked_shot_attempts"]
+        )
+        for row in aggregate_rows
+    )
+
     gates = {
         "passes_expected_game_count": (len(seen_game_ids) == expected_game_count),
         "passes_expected_row_count": (len(aggregate_rows) == expected_game_count * 2),
         "passes_two_rows_per_game": all(count == 2 for count in game_row_counts.values()),
         "passes_unique_game_team_keys": all(count == 1 for count in key_counts.values()),
+        "passes_shot_attempt_identity": (shot_attempt_identity_passed),
         "passes_sog_reconciliation": (all_sog_reconciled),
         "passes_applicable_score_reconciliation": (all_applicable_scores_reconciled),
         "passes_known_event_owner_teams": (unknown_owner_team_event_count == 0),
@@ -601,7 +615,7 @@ def build_team_game_aggregates(
         "pbp_shots_on_goal",
         "shot_attempt_events",
         "missed_shots",
-        "blocked_shots",
+        "blocked_shot_attempts",
         "penalties",
         "penalty_minutes",
         "delayed_penalties",
@@ -618,7 +632,7 @@ def build_team_game_aggregates(
             totals[field] += int(row[field])
 
     audit = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "batch_id": batch_id,
         "source_selection_id": source_selection_id,
         "source_selection_sha256": (source_selection_sha256),
