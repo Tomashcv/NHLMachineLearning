@@ -1,0 +1,46 @@
+schema_version: "1.0"
+
+pilot:
+  pilot_id: multiseason_40_v1
+  target_games: 40
+  minimum_seasons: 5
+
+required_coverage:
+  game_types:
+    - regular_season
+    - playoff
+  outcomes:
+    - regulation
+    - overtime_only
+    - shootout
+
+dates:
+  - date: "2021-01-23"
+    season_id: "20202021"
+    intended_game_type: regular_season
+    purpose: early historical regular-season coverage
+
+  - date: "2022-01-15"
+    season_id: "20212022"
+    intended_game_type: regular_season
+    purpose: second regular-season sample
+
+  - date: "2023-01-14"
+    season_id: "20222023"
+    intended_game_type: regular_season
+    purpose: third regular-season sample
+
+  - date: "2024-01-13"
+    season_id: "20232024"
+    intended_game_type: regular_season
+    purpose: fourth regular-season sample
+
+  - date: "2024-05-11"
+    season_id: "20232024"
+    intended_game_type: playoff
+    purpose: playoff structure and settlement coverage
+
+  - date: "2025-01-11"
+    season_id: "20242025"
+    intended_game_type: regular_season
+    purpose: existing validated REG OT and SO sample

@@ -1,0 +1,19 @@
+schema_version: "1.0"
+
+selection:
+  selection_id: multiseason_40_v1
+  target_games: 40
+  maximum_games_per_source_date: 10
+  minimum_playoff_games: 2
+
+required_outcomes:
+  - regulation
+  - overtime_only
+  - shootout
+
+season_quotas:
+  "20202021": 5
+  "20212022": 8
+  "20222023": 9
+  "20232024": 9
+  "20242025": 9
