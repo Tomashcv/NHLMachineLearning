@@ -269,3 +269,26 @@ but is not counted as a provider-defined shot on goal.
 These rows are post-game aggregates. They are not yet safe pre-game model
 features. Any later rolling feature must use only rows from games completed
 before the prediction timestamp.
+
+## Event-owner semantic validation
+
+The meaning of `eventOwnerTeamId` is not assumed to be identical across event
+types.
+
+For blocked shots, faceoffs, hits, giveaways and takeaways, the owner team is
+compared with the team of every relevant player role using the raw
+`rosterSpots` mapping.
+
+The audit infers the owner role only when:
+
+- all relevant player identifiers are present;
+- every player maps to one of the two teams;
+- the owner team is valid;
+- multi-player roles belong to opposing teams;
+- exactly one candidate role matches the owner team for every event of that
+  type.
+
+This validation determines whether existing aggregate names represent actions
+performed by a team or actions attempted against an opponent. No metric is
+accepted as a modelling feature solely because its provider event name appears
+intuitive.
