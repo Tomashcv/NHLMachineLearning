@@ -76,3 +76,7 @@ temp/
 # Local ingestion manifests
 storage/manifests/local/*
 !storage/manifests/local/.gitkeep
+
+# Local audit outputs
+storage/audits/local/*
+!storage/audits/local/.gitkeep
