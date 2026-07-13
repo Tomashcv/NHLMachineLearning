@@ -1,0 +1,38 @@
+schema_version: "1.0"
+
+corpus:
+  corpus_id: "nhl_regular_season_2021_2025_v1"
+  description: "Four-season NHL regular-season research corpus"
+  game_type_code: "02"
+  expected_game_count: 5248
+  playoffs_included: false
+  split_policy: "frozen_by_season"
+
+seasons:
+  - season_id: "20212022"
+    start_year: 2021
+    first_sequence: 1
+    last_sequence: 1312
+    expected_game_count: 1312
+    split_role: "development"
+
+  - season_id: "20222023"
+    start_year: 2022
+    first_sequence: 1
+    last_sequence: 1312
+    expected_game_count: 1312
+    split_role: "development"
+
+  - season_id: "20232024"
+    start_year: 2023
+    first_sequence: 1
+    last_sequence: 1312
+    expected_game_count: 1312
+    split_role: "validation"
+
+  - season_id: "20242025"
+    start_year: 2024
+    first_sequence: 1
+    last_sequence: 1312
+    expected_game_count: 1312
+    split_role: "sealed_holdout"
