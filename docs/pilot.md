@@ -51,3 +51,31 @@ No large NHL web backfill is permitted during the pilot.
 
 The source remains research-only and its raw files are not distributed through
 the public repository.
+
+## Canonical game rules
+
+Canonical NHL games are produced deterministically from immutable raw files.
+
+Every canonical record retains:
+
+- the raw relative path;
+- the raw SHA-256;
+- the provider game ID;
+- the season ID;
+- home and away team IDs;
+- scheduled start in UTC;
+- final scores;
+- overtime and shootout indicators;
+- source observation and ingestion timestamps.
+
+For manually retrieved historical result files, the import timestamp is only a
+proxy for when the source was observed. These records are classified as
+postgame result data and cannot be used as proof of pregame availability.
+
+Final games must explicitly identify whether the last period type was:
+
+- `REG`;
+- `OT`;
+- `SO`.
+
+The parser must not infer overtime or shootout solely from the final score.
