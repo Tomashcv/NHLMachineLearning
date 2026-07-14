@@ -359,3 +359,41 @@ pre-game feature row.
 The forty-game pilot validates the temporal and lineage machinery only. Its
 sparse selected-game history is not sufficient for model training or betting
 evaluation.
+
+## Season-scale regular-season target corpus
+
+The successful forty-game pilot validates the raw, canonical, semantic,
+team-game and temporal feature machinery, but it is too sparse for modelling.
+
+The first season-scale target contains the complete regular-season game-ID
+ranges for:
+
+- 2021-22: development;
+- 2022-23: development;
+- 2023-24: validation;
+- 2024-25: sealed holdout.
+
+Each season contains 1,312 candidate regular-season IDs, for a total target of
+5,248 games.
+
+The target manifest is intentionally labelled `candidate_unverified`.
+Constructing a syntactically valid game ID does not prove that its payload,
+date, teams, state or event contents are valid.
+
+A candidate becomes locally valid only when its PBP payload confirms:
+
+- the exact game ID;
+- the expected season;
+- regular-season game type;
+- a final game state;
+- a start timestamp;
+- distinct home and away team IDs;
+- a non-empty play list.
+
+Playoffs are excluded from the first model corpus because their scheduling,
+incentives, overtime rules and matchup structure differ from the regular
+season.
+
+The 2024-25 season remains sealed. Its outcomes may be stored and processed
+mechanically, but must not influence feature selection, hyperparameters,
+calibration choices or betting rules.
