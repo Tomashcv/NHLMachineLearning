@@ -505,3 +505,34 @@ Pregame feature SHA-256:
 
 The 2024-25 sealed holdout was transformed mechanically and remains excluded
 from feature, model, calibration and policy selection.
+
+## Season-scale model-ready panel
+
+The verified team-game and pregame panels were joined into one deterministic
+row per regular-season game.
+
+Results:
+
+- 5,248 games and 5,248 rows;
+- 58 base pregame fields;
+- 174 model feature columns: home, away and home-minus-away;
+- 2,624 development games;
+- 1,312 validation games;
+- 1,312 mechanically materialized sealed-holdout games;
+- one unique row per game;
+- binary final-game home-win target;
+- no target or post-game field included in the feature schema.
+
+Target columns remain formally separate from the audited feature-column list.
+Any future experiment must select features from that explicit list rather than
+using heuristic column exclusion.
+
+Feature schema SHA-256:
+`30873c082d650c745f7bcfbc18c35216508d7275ffe4dfd87059a09a8c4be3e3`
+
+Model-ready output SHA-256:
+`5d254558163d1d193ae67ceb14f5bbc62ce7ec1efb7ddaa6c3535021f1860f6f`
+
+The 2024-25 sealed holdout must not be loaded by experimental code unless a
+separate explicit unlock action is performed after the development and
+validation protocol is frozen.
