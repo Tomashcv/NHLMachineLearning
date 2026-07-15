@@ -397,3 +397,27 @@ season.
 The 2024-25 season remains sealed. Its outcomes may be stored and processed
 mechanically, but must not influence feature selection, hyperparameters,
 calibration choices or betting rules.
+
+## Verified season-scale game inventory
+
+The 5,248 candidate regular-season IDs are converted into a verified local
+inventory before season-scale event processing begins.
+
+Each local PBP payload must confirm:
+
+- exact game ID and expected season;
+- regular-season game type;
+- final provider state;
+- timezone-aware scheduled start;
+- distinct home and away teams;
+- official final scores and shots on goal;
+- supported final period type: regulation, overtime or shootout;
+- non-empty play and roster lists;
+- roster teams restricted to the two participating teams.
+
+The verified inventory records source filename, path, byte size and SHA-256
+for every game. It also freezes the expected REG, OT or SO outcome later used
+by canonical PBP reconciliation.
+
+The sealed-holdout season is inventoried mechanically. Its outcomes remain
+unavailable for model-selection decisions.
