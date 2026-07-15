@@ -444,3 +444,28 @@ changing game membership, outcomes or source lineage.
 The 2021-22 and 2022-23 batches are development data. The 2023-24 batch is
 validation data. The 2024-25 batch is a sealed holdout and must not influence
 feature, model, calibration or betting-rule selection.
+
+## Season-scale team-game aggregates
+
+The four verified regular seasons produce deterministic post-game team-level
+aggregates before any rolling pregame features are calculated.
+
+Results:
+
+- 5,248 games;
+- 10,496 team-game rows;
+- exactly two rows per game;
+- 1,647,137 canonical PBP events aggregated;
+- 32 participating teams per season;
+- all score, event-owner and shot-attempt identity gates passed.
+
+Official boxscore shots on goal remain the authoritative aggregate value.
+The PBP-derived value, PBP-minus-official delta and provider-correction flag
+are preserved separately for auditability.
+
+Seventeen 2021-22 games use the previously audited provider correction policy:
+exactly one team has PBP SOG equal to official SOG plus one. All remaining
+5,231 games reconcile exactly.
+
+The 2024-25 sealed holdout was transformed mechanically and remains excluded
+from feature, model, calibration and policy selection.

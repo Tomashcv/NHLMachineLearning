@@ -1,4 +1,4 @@
-"""Build deterministic team-game aggregates from canonical NHL PBP events."""
+"""Build season-scale team-game aggregates from verified NHL PBP."""
 
 from __future__ import annotations
 
@@ -7,55 +7,23 @@ import json
 import os
 import tempfile
 from collections import Counter
-from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-
-class TeamGameAggregateError(ValueError):
-    """Raised when team-game aggregates cannot be built safely."""
-
-
-@dataclass(frozen=True, slots=True)
-class TeamGameAggregateResult:
-    """Summary of one team-game aggregate build."""
-
-    batch_id: str
-    source_selection_id: str
-    game_count: int
-    row_count: int
-    unique_team_count: int
-    canonical_event_count: int
-    all_sog_reconciled: bool
-    all_applicable_scores_reconciled: bool
-    output_path: str
-    output_sha256: str
-    audit_path: str
-    already_present: bool
-    status: str
-
-
-SHOT_ATTEMPT_TYPES = {
-    "blocked-shot",
-    "goal",
-    "missed-shot",
-    "shot-on-goal",
-}
-
-TRACKED_TEAM_EVENT_TYPES = {
-    "blocked-shot",
-    "delayed-penalty",
-    "faceoff",
-    "giveaway",
-    "goal",
-    "hit",
-    "missed-shot",
-    "penalty",
-    "shot-on-goal",
-    "takeaway",
-}
+from nhl_ml.pbp_canonical import classify_sog_reconciliation
+from nhl_ml.season_scale_pbp_batches import (
+    SeasonScalePbpBatchError,
+    verify_season_pbp_batch_config,
+)
+from nhl_ml.team_game_aggregates import (
+    TRACKED_TEAM_EVENT_TYPES,
+    TeamGameAggregateError,
+    TeamGameAggregateResult,
+    aggregate_team_event,
+    new_team_metrics,
+)
 
 
 def _sha256(data: bytes) -> str:
@@ -78,7 +46,10 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
 
     with path.open("r", encoding="utf-8") as handle:
-        for line_number, line in enumerate(handle, start=1):
+        for line_number, line in enumerate(
+            handle,
+            start=1,
+        ):
             stripped = line.strip()
 
             if not stripped:
@@ -92,9 +63,7 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
                 ) from exc
 
             if not isinstance(record, dict):
-                raise TeamGameAggregateError(
-                    f"Expected JSON object in {path} at line {line_number}"
-                )
+                raise TeamGameAggregateError(f"Expected object in {path} at line {line_number}")
 
             records.append(record)
 
@@ -113,8 +82,10 @@ def _read_yaml(path: Path) -> dict[str, Any]:
     return payload
 
 
-def _serialize_jsonl(records: list[dict[str, Any]]) -> bytes:
-    lines = [
+def _serialize_jsonl(
+    records: list[dict[str, Any]],
+) -> bytes:
+    serialized = "\n".join(
         json.dumps(
             record,
             ensure_ascii=False,
@@ -122,9 +93,7 @@ def _serialize_jsonl(records: list[dict[str, Any]]) -> bytes:
             separators=(",", ":"),
         )
         for record in records
-    ]
-
-    serialized = "\n".join(lines)
+    )
 
     if serialized:
         serialized += "\n"
@@ -136,7 +105,10 @@ def _write_bytes_atomically(
     destination: Path,
     data: bytes,
 ) -> None:
-    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
     temporary_path: Path | None = None
 
     try:
@@ -175,212 +147,109 @@ def _write_json_atomically(
     _write_bytes_atomically(destination, data)
 
 
-def _expected_outcome(game: dict[str, Any]) -> str:
-    if game.get("went_to_shootout") is True:
-        return "shootout"
-
-    if game.get("went_to_overtime") is True:
-        return "overtime_only"
-
-    return "regulation"
-
-
-def new_team_metrics() -> dict[str, int]:
-    return {
-        "pbp_goals_non_shootout": 0,
-        "shot_on_goal_events": 0,
-        "goals_with_shot_type": 0,
-        "goals_without_shot_type": 0,
-        "pbp_shots_on_goal": 0,
-        "shot_attempt_events": 0,
-        "shot_attempts_with_coordinates": 0,
-        "missed_shots": 0,
-        "blocked_shot_attempts": 0,
-        "penalties": 0,
-        "penalty_minutes": 0,
-        "penalties_without_duration": 0,
-        "delayed_penalties": 0,
-        "faceoff_wins": 0,
-        "hits": 0,
-        "giveaways": 0,
-        "takeaways": 0,
-        "empty_net_goal_candidates": 0,
-        "regulation_owned_event_count": 0,
-        "overtime_owned_event_count": 0,
-        "shootout_owned_event_count": 0,
-    }
-
-
-def aggregate_team_event(
+def build_season_scale_team_game_aggregates(
     *,
-    metrics: dict[str, int],
-    event: dict[str, Any],
-) -> None:
-    event_type = str(event["event_type"])
-    period_type = str(event["period_type"]).upper()
-
-    if period_type == "REG":
-        metrics["regulation_owned_event_count"] += 1
-    elif period_type == "OT":
-        metrics["overtime_owned_event_count"] += 1
-    elif period_type == "SO":
-        metrics["shootout_owned_event_count"] += 1
-
-    if period_type == "SO":
-        return
-
-    if event_type == "goal":
-        metrics["pbp_goals_non_shootout"] += 1
-
-        if event.get("shot_type") is None:
-            metrics["goals_without_shot_type"] += 1
-        else:
-            metrics["goals_with_shot_type"] += 1
-            metrics["pbp_shots_on_goal"] += 1
-
-        if event.get("empty_net_candidate") is True:
-            metrics["empty_net_goal_candidates"] += 1
-
-    elif event_type == "shot-on-goal":
-        metrics["shot_on_goal_events"] += 1
-        metrics["pbp_shots_on_goal"] += 1
-
-    if event_type in SHOT_ATTEMPT_TYPES:
-        metrics["shot_attempt_events"] += 1
-
-        if event.get("x_coord") is not None and event.get("y_coord") is not None:
-            metrics["shot_attempts_with_coordinates"] += 1
-
-    if event_type == "missed-shot":
-        metrics["missed_shots"] += 1
-    elif event_type == "blocked-shot":
-        metrics["blocked_shot_attempts"] += 1
-    elif event_type == "penalty":
-        metrics["penalties"] += 1
-
-        duration = event.get("penalty_duration_minutes")
-
-        if duration is None:
-            metrics["penalties_without_duration"] += 1
-        else:
-            metrics["penalty_minutes"] += int(duration)
-
-    elif event_type == "delayed-penalty":
-        metrics["delayed_penalties"] += 1
-    elif event_type == "faceoff":
-        metrics["faceoff_wins"] += 1
-    elif event_type == "hit":
-        metrics["hits"] += 1
-    elif event_type == "giveaway":
-        metrics["giveaways"] += 1
-    elif event_type == "takeaway":
-        metrics["takeaways"] += 1
-
-
-def build_team_game_aggregates(
-    *,
-    pilot_path: Path,
-    pbp_manifest_path: Path,
+    season_id: str,
+    config_path: Path,
+    inventory_path: Path,
+    inventory_audit_path: Path,
     canonical_output_root: Path,
     per_game_audit_root: Path,
     output_path: Path,
     audit_path: Path,
 ) -> TeamGameAggregateResult:
-    """Build two deterministic aggregate rows for every pilot game."""
-    if not pilot_path.is_file():
-        raise FileNotFoundError(f"Pilot file does not exist: {pilot_path}")
+    """Build two verified team-game rows for one NHL season."""
+    verification = verify_season_pbp_batch_config(
+        season_id=season_id,
+        config_path=config_path,
+        inventory_path=inventory_path,
+        inventory_audit_path=inventory_audit_path,
+    )
 
-    if not pbp_manifest_path.is_file():
-        raise FileNotFoundError(f"PBP manifest does not exist: {pbp_manifest_path}")
+    if verification["status"] != "verified":
+        raise SeasonScalePbpBatchError(f"Season config is not verified: {season_id}")
 
-    manifest = _read_yaml(pbp_manifest_path)
-    batch = manifest.get("batch")
-    manifest_games = manifest.get("games")
+    config = _read_yaml(config_path)
+    batch = config.get("batch")
+    config_games = config.get("games")
 
     if not isinstance(batch, dict):
-        raise TeamGameAggregateError("PBP manifest has no batch mapping")
+        raise TeamGameAggregateError("Season config has no batch mapping")
 
-    if not isinstance(manifest_games, list):
-        raise TeamGameAggregateError("PBP manifest games must be a list")
+    if not isinstance(config_games, list):
+        raise TeamGameAggregateError("Season config games must be a list")
 
-    batch_id = str(batch.get("batch_id", "")).strip()
-    source_selection_id = str(batch.get("source_selection_id", "")).strip()
-    source_selection_sha256 = str(batch.get("source_selection_sha256", "")).strip()
-    expected_game_count = int(batch.get("expected_game_count", 0))
+    batch_id = str(batch["batch_id"])
+    corpus_id = str(batch["corpus_id"])
+    split_role = str(batch["split_role"])
+    source_selection_id = str(batch["source_selection_id"])
+    source_selection_sha256 = str(batch["source_selection_sha256"])
+    source_inventory_sha256 = str(batch["source_inventory_sha256"])
+    expected_game_count = int(batch["expected_game_count"])
 
-    if not batch_id or not source_selection_id or not source_selection_sha256:
-        raise TeamGameAggregateError("PBP manifest batch metadata is incomplete")
+    inventory_data = inventory_path.read_bytes()
 
-    pilot_data = pilot_path.read_bytes()
+    if _sha256(inventory_data) != source_inventory_sha256:
+        raise TeamGameAggregateError("Inventory hash does not match season config")
 
-    if _sha256(pilot_data) != source_selection_sha256:
-        raise TeamGameAggregateError("Pilot hash does not match PBP manifest")
+    inventory_rows = [
+        row for row in _read_jsonl(inventory_path) if str(row["season_id"]) == season_id
+    ]
 
-    pilot_records = _read_jsonl(pilot_path)
-
-    if len(pilot_records) != expected_game_count:
+    if len(inventory_rows) != expected_game_count:
         raise TeamGameAggregateError(
-            f"Pilot contains {len(pilot_records)} games, expected {expected_game_count}"
+            f"Season inventory contains {len(inventory_rows)} games, expected {expected_game_count}"
         )
 
-    manifest_by_game_id: dict[str, dict[str, Any]] = {}
+    inventory_by_game_id = {str(row["game_id"]): row for row in inventory_rows}
+    config_by_game_id = {
+        str(game["game_id"]): game for game in config_games if isinstance(game, dict)
+    }
 
-    for item in manifest_games:
-        if not isinstance(item, dict):
-            raise TeamGameAggregateError("PBP manifest game must be a mapping")
+    if len(inventory_by_game_id) != expected_game_count:
+        raise TeamGameAggregateError("Season inventory has duplicate game IDs")
 
-        game_id = str(item.get("game_id", "")).strip()
+    if len(config_by_game_id) != expected_game_count:
+        raise TeamGameAggregateError("Season config has duplicate game IDs")
 
-        if not game_id:
-            raise TeamGameAggregateError("PBP manifest game has no game_id")
-
-        if game_id in manifest_by_game_id:
-            raise TeamGameAggregateError(f"Duplicate manifest game ID: {game_id}")
-
-        manifest_by_game_id[game_id] = item
-
-    if len(manifest_by_game_id) != expected_game_count:
-        raise TeamGameAggregateError("Manifest game count does not match expected count")
+    if set(inventory_by_game_id) != set(config_by_game_id):
+        raise TeamGameAggregateError("Season config and inventory game IDs differ")
 
     aggregate_rows: list[dict[str, Any]] = []
     game_audits: list[dict[str, Any]] = []
-    seen_game_ids: set[str] = set()
     unique_team_ids: set[str] = set()
 
     total_canonical_events = 0
     unknown_owner_team_event_count = 0
 
-    for record in pilot_records:
-        game = record.get("game")
+    for game_id in sorted(
+        inventory_by_game_id,
+        key=lambda value: (
+            str(inventory_by_game_id[value]["scheduled_start_utc"]),
+            value,
+        ),
+    ):
+        record = inventory_by_game_id[game_id]
+        configured_game = config_by_game_id[game_id]
 
-        if not isinstance(game, dict):
-            raise TeamGameAggregateError("Pilot record has no game mapping")
+        if str(record["split_role"]) != split_role:
+            raise TeamGameAggregateError(f"Split-role mismatch for game {game_id}")
 
-        game_id = str(game.get("game_id", "")).strip()
+        expected_outcome = str(configured_game["expected_outcome"])
 
-        if not game_id:
-            raise TeamGameAggregateError("Pilot game has no game_id")
-
-        if game_id in seen_game_ids:
-            raise TeamGameAggregateError(f"Duplicate pilot game ID: {game_id}")
-
-        manifest_game = manifest_by_game_id.get(game_id)
-
-        if manifest_game is None:
-            raise TeamGameAggregateError(f"Pilot game missing from manifest: {game_id}")
-
-        expected_outcome = _expected_outcome(game)
-
-        if manifest_game.get("expected_outcome") != expected_outcome:
+        if expected_outcome != str(record["expected_outcome"]):
             raise TeamGameAggregateError(f"Outcome mismatch for game {game_id}")
 
-        home_team_id = str(game.get("home_team_id", "")).strip()
-        away_team_id = str(game.get("away_team_id", "")).strip()
+        away_team_id = str(record["away_team_id"])
+        home_team_id = str(record["home_team_id"])
 
-        if not home_team_id or not away_team_id or home_team_id == away_team_id:
+        if not away_team_id or not home_team_id or away_team_id == home_team_id:
             raise TeamGameAggregateError(f"Invalid team IDs for game {game_id}")
 
-        team_ids = {away_team_id, home_team_id}
+        team_ids = {
+            away_team_id,
+            home_team_id,
+        }
         unique_team_ids.update(team_ids)
 
         canonical_audit_path = per_game_audit_root / f"pbp_canonical_{game_id}.json"
@@ -395,7 +264,12 @@ def build_team_game_aggregates(
                 "",
             )
         ).strip()
-        expected_output_sha256 = str(canonical_audit.get("output_sha256", "")).strip()
+        expected_output_sha256 = str(
+            canonical_audit.get(
+                "output_sha256",
+                "",
+            )
+        ).strip()
 
         if not output_relative_path or not expected_output_sha256:
             raise TeamGameAggregateError(f"Canonical audit incomplete: {game_id}")
@@ -412,7 +286,12 @@ def build_team_game_aggregates(
 
         canonical_records = _read_jsonl(canonical_path)
 
-        if len(canonical_records) != int(canonical_audit.get("event_count", -1)):
+        if len(canonical_records) != int(
+            canonical_audit.get(
+                "event_count",
+                -1,
+            )
+        ):
             raise TeamGameAggregateError(f"Canonical event count mismatch: {game_id}")
 
         total_canonical_events += len(canonical_records)
@@ -421,7 +300,6 @@ def build_team_game_aggregates(
             away_team_id: new_team_metrics(),
             home_team_id: new_team_metrics(),
         }
-
         game_unknown_owner_count = 0
 
         for canonical_record in canonical_records:
@@ -434,13 +312,12 @@ def build_team_game_aggregates(
                 raise TeamGameAggregateError(f"Canonical event game mismatch: {game_id}")
 
             event_type = str(event.get("event_type", ""))
-            owner_team_id_raw = event.get("event_owner_team_id")
-            owner_team_id = (
-                str(owner_team_id_raw).strip() if owner_team_id_raw is not None else None
-            )
 
             if event_type not in TRACKED_TEAM_EVENT_TYPES:
                 continue
+
+            owner_raw = event.get("event_owner_team_id")
+            owner_team_id = str(owner_raw).strip() if owner_raw is not None else None
 
             if owner_team_id not in team_ids:
                 game_unknown_owner_count += 1
@@ -454,26 +331,76 @@ def build_team_game_aggregates(
         unknown_owner_team_event_count += game_unknown_owner_count
 
         official_scores = {
-            away_team_id: int(game["away_score"]),
-            home_team_id: int(game["home_score"]),
+            away_team_id: int(record["away_score"]),
+            home_team_id: int(record["home_score"]),
+        }
+        inventory_official_sog = {
+            away_team_id: int(record["away_shots_on_goal"]),
+            home_team_id: int(record["home_shots_on_goal"]),
         }
 
-        official_sog_raw = canonical_audit.get("official_shots_on_goal")
+        canonical_official_sog_raw = canonical_audit.get("official_shots_on_goal")
 
-        if not isinstance(official_sog_raw, dict):
-            raise TeamGameAggregateError(f"Official SOG missing for game {game_id}")
+        if not isinstance(
+            canonical_official_sog_raw,
+            dict,
+        ):
+            raise TeamGameAggregateError(f"Official SOG missing: {game_id}")
 
-        official_sog = {team_id: int(official_sog_raw[team_id]) for team_id in team_ids}
+        canonical_official_sog = {
+            team_id: int(canonical_official_sog_raw[team_id]) for team_id in team_ids
+        }
 
-        score_reconciliation_applicable = expected_outcome != "shootout"
+        if canonical_official_sog != inventory_official_sog:
+            raise TeamGameAggregateError(f"Inventory and canonical official SOG differ: {game_id}")
 
-        game_score_reconciled = not score_reconciliation_applicable or all(
-            metrics_by_team[team_id]["pbp_goals_non_shootout"] == official_scores[team_id]
-            for team_id in team_ids
+        pbp_sog = {team_id: metrics_by_team[team_id]["pbp_shots_on_goal"] for team_id in team_ids}
+
+        (
+            game_sog_reconciled,
+            sog_status,
+            sog_deltas,
+            correction_team_id,
+        ) = classify_sog_reconciliation(
+            inventory_official_sog,
+            pbp_sog,
         )
 
-        game_sog_reconciled = all(
-            metrics_by_team[team_id]["pbp_shots_on_goal"] == official_sog[team_id]
+        canonical_status = str(
+            canonical_audit.get(
+                "sog_reconciliation_status",
+                "",
+            )
+        )
+        canonical_deltas_raw = canonical_audit.get("sog_deltas_by_team")
+
+        if not isinstance(
+            canonical_deltas_raw,
+            dict,
+        ):
+            raise TeamGameAggregateError(f"Canonical SOG deltas missing: {game_id}")
+
+        canonical_deltas = {
+            str(team_id): int(delta) for team_id, delta in canonical_deltas_raw.items()
+        }
+        canonical_correction_team_id_raw = canonical_audit.get("sog_provider_correction_team_id")
+        canonical_correction_team_id = (
+            str(canonical_correction_team_id_raw)
+            if canonical_correction_team_id_raw is not None
+            else None
+        )
+
+        if (
+            canonical_status != sog_status
+            or canonical_deltas != sog_deltas
+            or canonical_correction_team_id != correction_team_id
+            or bool(canonical_audit.get("sog_reconciliation_passed")) != game_sog_reconciled
+        ):
+            raise TeamGameAggregateError(f"Canonical SOG policy mismatch: {game_id}")
+
+        score_reconciliation_applicable = expected_outcome != "shootout"
+        game_score_reconciled = not score_reconciliation_applicable or all(
+            metrics_by_team[team_id]["pbp_goals_non_shootout"] == official_scores[team_id]
             for team_id in team_ids
         )
 
@@ -501,23 +428,29 @@ def build_team_game_aggregates(
 
             aggregate_rows.append(
                 {
-                    "schema_version": "1.1",
+                    "schema_version": "1.2",
                     "batch_id": batch_id,
+                    "corpus_id": corpus_id,
                     "source_selection_id": (source_selection_id),
                     "source_selection_sha256": (source_selection_sha256),
+                    "source_inventory_sha256": (source_inventory_sha256),
+                    "split_role": split_role,
                     "game_id": game_id,
-                    "season_id": str(game["season_id"]),
-                    "game_type": str(game["game_type"]),
-                    "scheduled_start_utc": str(game["scheduled_start_utc"]),
-                    "expected_outcome": expected_outcome,
+                    "season_id": season_id,
+                    "game_type": "regular_season",
+                    "scheduled_start_utc": str(record["scheduled_start_utc"]),
+                    "expected_outcome": (expected_outcome),
                     "team_id": team_id,
-                    "opponent_team_id": opponent_team_id,
+                    "opponent_team_id": (opponent_team_id),
                     "venue_side": venue_side,
                     "official_final_score": (official_scores[team_id]),
-                    "official_shots_on_goal": (official_sog[team_id]),
+                    "official_shots_on_goal": (inventory_official_sog[team_id]),
                     "score_reconciliation_applicable": (score_reconciliation_applicable),
                     "score_reconciliation_passed": (game_score_reconciled),
                     "sog_reconciliation_passed": (game_sog_reconciled),
+                    "sog_reconciliation_status": (sog_status),
+                    "sog_delta_pbp_minus_official": (sog_deltas[team_id]),
+                    "sog_provider_correction_applied": (correction_team_id == team_id),
                     **metrics,
                     "unblocked_shot_attempt_events": (
                         metrics["pbp_shots_on_goal"]
@@ -535,27 +468,28 @@ def build_team_game_aggregates(
         game_audits.append(
             {
                 "game_id": game_id,
-                "expected_outcome": expected_outcome,
+                "expected_outcome": (expected_outcome),
                 "canonical_event_count": len(canonical_records),
                 "team_row_count": 2,
                 "official_scores": official_scores,
                 "pbp_goals_non_shootout": {
                     team_id: metrics_by_team[team_id]["pbp_goals_non_shootout"]
-                    for team_id in sorted(team_ids)
+                    for team_id in sorted(
+                        team_ids,
+                        key=int,
+                    )
                 },
                 "score_reconciliation_applicable": (score_reconciliation_applicable),
                 "score_reconciliation_passed": (game_score_reconciled),
-                "official_shots_on_goal": official_sog,
-                "pbp_shots_on_goal": {
-                    team_id: metrics_by_team[team_id]["pbp_shots_on_goal"]
-                    for team_id in sorted(team_ids)
-                },
+                "official_shots_on_goal": (inventory_official_sog),
+                "pbp_shots_on_goal": pbp_sog,
+                "sog_deltas_by_team": (sog_deltas),
+                "sog_reconciliation_status": (sog_status),
+                "sog_provider_correction_team_id": (correction_team_id),
                 "sog_reconciliation_passed": (game_sog_reconciled),
                 "unknown_owner_team_event_count": (game_unknown_owner_count),
             }
         )
-
-        seen_game_ids.add(game_id)
 
     aggregate_rows.sort(
         key=lambda row: (
@@ -566,24 +500,30 @@ def build_team_game_aggregates(
     )
 
     output_data = _serialize_jsonl(aggregate_rows)
-    output_digest = _sha256(output_data)
-
+    output_sha256 = _sha256(output_data)
     already_present = output_path.is_file()
 
     if already_present:
         if output_path.read_bytes() != output_data:
             raise TeamGameAggregateError(f"Existing aggregate output differs: {output_path}")
     else:
-        _write_bytes_atomically(output_path, output_data)
+        _write_bytes_atomically(
+            output_path,
+            output_data,
+        )
 
-    key_counts = Counter((row["game_id"], row["team_id"]) for row in aggregate_rows)
+    key_counts = Counter(
+        (
+            row["game_id"],
+            row["team_id"],
+        )
+        for row in aggregate_rows
+    )
     game_row_counts = Counter(row["game_id"] for row in aggregate_rows)
+    sog_status_counts = Counter(game["sog_reconciliation_status"] for game in game_audits)
 
     all_sog_reconciled = all(game["sog_reconciliation_passed"] for game in game_audits)
-    all_applicable_scores_reconciled = all(
-        game["score_reconciliation_passed"] for game in game_audits
-    )
-
+    all_scores_reconciled = all(game["score_reconciliation_passed"] for game in game_audits)
     shot_attempt_identity_passed = all(
         row["shot_attempt_events"]
         == (
@@ -596,22 +536,21 @@ def build_team_game_aggregates(
     )
 
     gates = {
-        "passes_expected_game_count": (len(seen_game_ids) == expected_game_count),
+        "passes_expected_game_count": (len(game_audits) == expected_game_count),
         "passes_expected_row_count": (len(aggregate_rows) == expected_game_count * 2),
         "passes_two_rows_per_game": all(count == 2 for count in game_row_counts.values()),
         "passes_unique_game_team_keys": all(count == 1 for count in key_counts.values()),
         "passes_shot_attempt_identity": (shot_attempt_identity_passed),
-        "passes_sog_reconciliation": (all_sog_reconciled),
-        "passes_applicable_score_reconciliation": (all_applicable_scores_reconciled),
+        "passes_sog_reconciliation_policy": (all_sog_reconciled),
+        "passes_applicable_score_reconciliation": (all_scores_reconciled),
         "passes_known_event_owner_teams": (unknown_owner_team_event_count == 0),
     }
 
     status = "complete" if all(gates.values()) else "failed"
 
-    totals = Counter()
-
     numeric_metric_fields = (
         "pbp_goals_non_shootout",
+        "official_shots_on_goal",
         "pbp_shots_on_goal",
         "shot_attempt_events",
         "missed_shots",
@@ -626,54 +565,59 @@ def build_team_game_aggregates(
         "empty_net_goal_candidates",
         "goals_without_shot_type",
     )
+    totals: Counter[str] = Counter()
 
     for row in aggregate_rows:
         for field in numeric_metric_fields:
             totals[field] += int(row[field])
 
     audit = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "batch_id": batch_id,
-        "source_selection_id": source_selection_id,
+        "corpus_id": corpus_id,
+        "season_id": season_id,
+        "split_role": split_role,
+        "source_selection_id": (source_selection_id),
         "source_selection_sha256": (source_selection_sha256),
+        "source_inventory_sha256": (source_inventory_sha256),
         "status": status,
-        "game_count": len(seen_game_ids),
+        "game_count": len(game_audits),
         "row_count": len(aggregate_rows),
         "unique_team_count": len(unique_team_ids),
-        "canonical_event_count": total_canonical_events,
+        "canonical_event_count": (total_canonical_events),
+        "sog_reconciliation_status_counts": dict(sorted(sog_status_counts.items())),
+        "sog_provider_correction_game_count": (
+            sog_status_counts["provider_boxscore_minus_one_correction"]
+        ),
         "output_path": str(output_path),
-        "output_sha256": output_digest,
+        "output_sha256": output_sha256,
         "unknown_owner_team_event_count": (unknown_owner_team_event_count),
         "gates": gates,
         "totals": dict(sorted(totals.items())),
         "games": game_audits,
     }
 
-    _write_json_atomically(audit_path, audit)
+    _write_json_atomically(
+        audit_path,
+        audit,
+    )
 
     if status != "complete":
         failed_gates = sorted(gate for gate, passed in gates.items() if not passed)
-        raise TeamGameAggregateError(f"Team-game aggregate gates failed: {failed_gates}")
+        raise TeamGameAggregateError(f"Season team-game aggregate gates failed: {failed_gates}")
 
     return TeamGameAggregateResult(
         batch_id=batch_id,
-        source_selection_id=source_selection_id,
-        game_count=len(seen_game_ids),
+        source_selection_id=(source_selection_id),
+        game_count=len(game_audits),
         row_count=len(aggregate_rows),
         unique_team_count=len(unique_team_ids),
-        canonical_event_count=total_canonical_events,
-        all_sog_reconciled=all_sog_reconciled,
-        all_applicable_scores_reconciled=(all_applicable_scores_reconciled),
+        canonical_event_count=(total_canonical_events),
+        all_sog_reconciled=(all_sog_reconciled),
+        all_applicable_scores_reconciled=(all_scores_reconciled),
         output_path=str(output_path),
-        output_sha256=output_digest,
+        output_sha256=output_sha256,
         audit_path=str(audit_path),
         already_present=already_present,
         status=status,
     )
-
-
-def result_as_dict(
-    result: TeamGameAggregateResult,
-) -> dict[str, Any]:
-    """Convert a team-game aggregate result into a mapping."""
-    return asdict(result)
