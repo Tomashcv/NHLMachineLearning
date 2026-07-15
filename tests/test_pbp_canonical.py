@@ -181,3 +181,132 @@ def test_duplicate_event_id_is_rejected(
             output_root=tmp_path / "output",
             audit_path=tmp_path / "audit.json",
         )
+
+
+def test_goal_without_shot_type_is_not_counted_as_sog(
+    tmp_path: Path,
+) -> None:
+    payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
+
+    goal = next(
+        play
+        for play in payload["plays"]
+        if play["typeDescKey"] == "goal" and play["details"]["eventOwnerTeamId"] == 13
+    )
+    goal["details"].pop("shotType")
+
+    payload["homeTeam"]["sog"] = 1
+
+    raw_root = tmp_path / "storage/raw"
+    relative_path = Path("nhl_web/manual/play_by_play/2024020999/pbp_goal_without_shot_type.json")
+    raw_file = raw_root / relative_path
+    raw_file.parent.mkdir(parents=True)
+    raw_file.write_text(
+        json.dumps(payload),
+        encoding="utf-8",
+    )
+
+    digest = hashlib.sha256(raw_file.read_bytes()).hexdigest()
+
+    manifest_path = tmp_path / "manifest.jsonl"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "endpoint_family": "play_by_play",
+                "game_id": "2024020999",
+                "raw_relative_path": relative_path.as_posix(),
+                "sha256": digest,
+                "imported_at_utc": "2025-02-02T12:00:00+00:00",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    audit_path = tmp_path / "audit.json"
+
+    result = canonicalize_pbp_file(
+        raw_file=raw_file,
+        raw_root=raw_root,
+        import_manifest_path=manifest_path,
+        output_root=tmp_path / "output",
+        audit_path=audit_path,
+    )
+
+    audit = json.loads(audit_path.read_text(encoding="utf-8"))
+
+    assert result.goal_count == 3
+    assert result.score_reconciliation_passed is True
+    assert result.sog_reconciliation_passed is True
+    assert audit["goal_without_shot_type_count"] == 1
+    assert audit["pbp_shots_on_goal_including_goals"] == {
+        "13": 1,
+        "6": 3,
+    }
+
+
+def test_classifies_exact_sog_reconciliation() -> None:
+    from nhl_ml.pbp_canonical import (
+        classify_sog_reconciliation,
+    )
+
+    passed, status, deltas, correction_team_id = classify_sog_reconciliation(
+        {"1": 30, "2": 25},
+        {"1": 30, "2": 25},
+    )
+
+    assert passed is True
+    assert status == "exact"
+    assert deltas == {"1": 0, "2": 0}
+    assert correction_team_id is None
+
+
+def test_classifies_provider_boxscore_minus_one_correction() -> None:
+    from nhl_ml.pbp_canonical import (
+        classify_sog_reconciliation,
+    )
+
+    passed, status, deltas, correction_team_id = classify_sog_reconciliation(
+        {"1": 30, "2": 25},
+        {"1": 31, "2": 25},
+    )
+
+    assert passed is True
+    assert status == ("provider_boxscore_minus_one_correction")
+    assert deltas == {"1": 1, "2": 0}
+    assert correction_team_id == "1"
+
+
+def test_rejects_other_sog_discrepancies() -> None:
+    from nhl_ml.pbp_canonical import (
+        classify_sog_reconciliation,
+    )
+
+    cases = [
+        (
+            {"1": 30, "2": 25},
+            {"1": 29, "2": 25},
+        ),
+        (
+            {"1": 30, "2": 25},
+            {"1": 32, "2": 25},
+        ),
+        (
+            {"1": 30, "2": 25},
+            {"1": 31, "2": 26},
+        ),
+        (
+            {"1": 30, "2": 25},
+            {"1": 30},
+        ),
+    ]
+
+    for official, pbp in cases:
+        passed, status, _, correction_team_id = classify_sog_reconciliation(
+            official,
+            pbp,
+        )
+
+        assert passed is False
+        assert status == "failed"
+        assert correction_team_id is None

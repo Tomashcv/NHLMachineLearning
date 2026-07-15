@@ -34,6 +34,8 @@ class PbpCanonicalizationResult:
     empty_net_goal_candidate_count: int
     score_reconciliation_passed: bool | None
     sog_reconciliation_passed: bool
+    sog_reconciliation_status: str
+    sog_provider_correction_team_id: str | None
     already_present: bool
     audit_path: str
 
@@ -45,11 +47,6 @@ SHOT_ATTEMPT_TYPES = {
     "shot-on-goal",
 }
 
-SOG_EVENT_TYPES = {
-    "goal",
-    "shot-on-goal",
-}
-
 TEAM_OWNED_EVENT_TYPES = {
     "blocked-shot",
     "goal",
@@ -57,6 +54,59 @@ TEAM_OWNED_EVENT_TYPES = {
     "penalty",
     "shot-on-goal",
 }
+
+SOG_RECONCILIATION_EXACT = "exact"
+SOG_RECONCILIATION_PROVIDER_CORRECTION = "provider_boxscore_minus_one_correction"
+SOG_RECONCILIATION_FAILED = "failed"
+
+
+def classify_sog_reconciliation(
+    official_sog: dict[str, int],
+    pbp_sog: dict[str, int],
+) -> tuple[
+    bool,
+    str,
+    dict[str, int],
+    str | None,
+]:
+    """Classify exact or narrowly recognized NHL SOG reconciliation."""
+    team_ids = sorted(
+        set(official_sog) | set(pbp_sog),
+        key=int,
+    )
+    deltas = {
+        team_id: (pbp_sog.get(team_id, 0) - official_sog.get(team_id, 0)) for team_id in team_ids
+    }
+
+    if (
+        set(official_sog) == set(pbp_sog)
+        and deltas
+        and all(delta == 0 for delta in deltas.values())
+    ):
+        return (
+            True,
+            SOG_RECONCILIATION_EXACT,
+            deltas,
+            None,
+        )
+
+    if set(official_sog) == set(pbp_sog) and len(deltas) == 2 and sorted(deltas.values()) == [0, 1]:
+        correction_team_id = next(team_id for team_id, delta in deltas.items() if delta == 1)
+
+        return (
+            True,
+            SOG_RECONCILIATION_PROVIDER_CORRECTION,
+            deltas,
+            correction_team_id,
+        )
+
+    return (
+        False,
+        SOG_RECONCILIATION_FAILED,
+        deltas,
+        None,
+    )
+
 
 PLAYER_DETAIL_FIELDS = {
     "assist1_player_id": "assist1PlayerId",
@@ -557,6 +607,7 @@ def canonicalize_pbp_file(
     penalty_count = 0
     penalty_minutes = 0
     empty_net_goal_candidate_count = 0
+    goal_without_shot_type_count = 0
     missing_owner_team_core_event_count = 0
     contains_shootout_period = False
 
@@ -584,7 +635,16 @@ def canonicalize_pbp_file(
         if period_type != "SO" and event_type == "goal" and team_id is not None:
             goal_counts[team_id] += 1
 
-        if period_type != "SO" and event_type in SOG_EVENT_TYPES and team_id is not None:
+        counts_as_shot_on_goal = (
+            period_type != "SO"
+            and team_id is not None
+            and (
+                event_type == "shot-on-goal"
+                or (event_type == "goal" and event["shot_type"] is not None)
+            )
+        )
+
+        if counts_as_shot_on_goal:
             sog_counts[team_id] += 1
 
         if event_type == "penalty":
@@ -593,6 +653,9 @@ def canonicalize_pbp_file(
 
         if event["empty_net_candidate"]:
             empty_net_goal_candidate_count += 1
+
+        if period_type != "SO" and event_type == "goal" and event["shot_type"] is None:
+            goal_without_shot_type_count += 1
 
     official_scores = {
         away_team["team_id"]: away_team["score"],
@@ -613,7 +676,15 @@ def canonicalize_pbp_file(
     else:
         score_reconciliation_passed = official_scores == pbp_goal_counts
 
-    sog_reconciliation_passed = official_sog == pbp_sog_counts
+    (
+        sog_reconciliation_passed,
+        sog_reconciliation_status,
+        sog_deltas,
+        sog_provider_correction_team_id,
+    ) = classify_sog_reconciliation(
+        official_sog,
+        pbp_sog_counts,
+    )
 
     audit = {
         "schema_version": "1.0",
@@ -635,6 +706,10 @@ def canonicalize_pbp_file(
         "penalty_count": penalty_count,
         "penalty_minutes": penalty_minutes,
         "empty_net_goal_candidate_count": (empty_net_goal_candidate_count),
+        "goal_without_shot_type_count": goal_without_shot_type_count,
+        "sog_reconciliation_method": (
+            "shot-on-goal events plus non-shootout goals with a provider shot type"
+        ),
         "missing_owner_team_core_event_count": (missing_owner_team_core_event_count),
         "contains_shootout_period": contains_shootout_period,
         "official_scores": official_scores,
@@ -642,6 +717,9 @@ def canonicalize_pbp_file(
         "score_reconciliation_passed": (score_reconciliation_passed),
         "official_shots_on_goal": official_sog,
         "pbp_shots_on_goal_including_goals": pbp_sog_counts,
+        "sog_deltas_by_team": sog_deltas,
+        "sog_reconciliation_status": sog_reconciliation_status,
+        "sog_provider_correction_team_id": (sog_provider_correction_team_id),
         "sog_reconciliation_passed": sog_reconciliation_passed,
         "unmapped_detail_key_counts": dict(sorted(unknown_detail_key_counts.items())),
     }
@@ -672,6 +750,8 @@ def canonicalize_pbp_file(
         empty_net_goal_candidate_count=(empty_net_goal_candidate_count),
         score_reconciliation_passed=(score_reconciliation_passed),
         sog_reconciliation_passed=sog_reconciliation_passed,
+        sog_reconciliation_status=sog_reconciliation_status,
+        sog_provider_correction_team_id=(sog_provider_correction_team_id),
         already_present=already_present,
         audit_path=str(audit_path),
     )
