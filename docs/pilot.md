@@ -536,3 +536,28 @@ Model-ready output SHA-256:
 The 2024-25 sealed holdout must not be loaded by experimental code unless a
 separate explicit unlock action is performed after the development and
 validation protocol is frozen.
+
+## Audited experiment dataset loader
+
+The model-ready panel was sanitized and materialized as three physically
+separate split files:
+
+- development: 2,624 games from 2021-22 and 2022-23;
+- validation: 1,312 games from 2023-24;
+- sealed holdout: 1,312 games from 2024-25.
+
+The default loader opens only the development split. It does not read the
+validation or sealed-holdout files.
+
+The experimental rows contain:
+
+- audited metadata;
+- the explicit list of 174 pregame feature columns;
+- the binary `target_home_win` target.
+
+Post-game score fields and outcome-type fields were removed from the
+experimental bundle.
+
+Access to the sealed holdout requires both an explicit boolean flag and the
+exact unlock token. Normal development and validation workflows therefore
+cannot open it accidentally.
