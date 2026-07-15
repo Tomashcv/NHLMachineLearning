@@ -469,3 +469,39 @@ exactly one team has PBP SOG equal to official SOG plus one. All remaining
 
 The 2024-25 sealed holdout was transformed mechanically and remains excluded
 from feature, model, calibration and policy selection.
+
+## Season-scale leakage-safe pregame features
+
+A deterministic combined panel was built from four regular seasons:
+
+- 5,248 games;
+- 10,496 team-game source rows;
+- 10,496 pregame feature rows;
+- 128 team-season groups;
+- 82 games in every team-season group.
+
+History is restricted to the same team and season and to strictly earlier UTC
+dates. Games starting earlier on the same UTC date are deliberately excluded
+because their post-game information may not have been safely available at the
+current decision time.
+
+The audit recorded:
+
+- 10,367 rows with at least one eligible history game;
+- 10,112 rows with at least three eligible history games;
+- 9,855 rows with at least five eligible history games;
+- 86 same-UTC-date history candidates excluded;
+- zero current-game, future-date, cross-season, wrong-team or missing-lineage
+  references.
+
+Official boxscore shots on goal are used for rolling features. Canonical PBP
+goals excluding shootouts remain the goals source.
+
+Combined team-game SHA-256:
+`071edf90e1bec9b5003da74b70a82beb6a0d91e534f563995aaa3e974d1ec179`
+
+Pregame feature SHA-256:
+`74f5cdad379ba3ab8e25b0c8549a4b91bc63de912684ce081ef5d5715c98e3ad`
+
+The 2024-25 sealed holdout was transformed mechanically and remains excluded
+from feature, model, calibration and policy selection.

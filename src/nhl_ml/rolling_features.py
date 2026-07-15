@@ -36,6 +36,14 @@ class RollingFeatureResult:
 
 HISTORY_RULE = "same_season_prior_utc_dates_only"
 
+SUPPORTED_TEAM_GAME_SCHEMA_VERSIONS = {
+    "1.1",
+    "1.2",
+}
+
+SHOTS_ON_GOAL_SOURCE = "official_boxscore"
+GOALS_SOURCE = "canonical_pbp_non_shootout"
+
 
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -308,8 +316,10 @@ def build_pregame_rolling_features(
     seen_keys: set[tuple[str, str]] = set()
 
     for row in source_rows:
-        if row.get("schema_version") != "1.1":
-            raise RollingFeatureError("Expected team-game schema version 1.1")
+        schema_version = str(row.get("schema_version", ""))
+
+        if schema_version not in SUPPORTED_TEAM_GAME_SCHEMA_VERSIONS:
+            raise RollingFeatureError(f"Unsupported team-game schema version: {schema_version!r}")
 
         game_id = str(row.get("game_id", "")).strip()
         team_id = str(row.get("team_id", "")).strip()
@@ -381,11 +391,11 @@ def build_pregame_rolling_features(
                 ),
                 "shots_on_goal_for": _integer(
                     row,
-                    "pbp_shots_on_goal",
+                    "official_shots_on_goal",
                 ),
                 "shots_on_goal_against": _integer(
                     opponent,
-                    "pbp_shots_on_goal",
+                    "official_shots_on_goal",
                 ),
                 "shot_attempts_for": _integer(
                     row,
@@ -524,6 +534,8 @@ def build_pregame_rolling_features(
             "source_batch_id": source_batch_id,
             "source_team_game_sha256": (source_sha256),
             "history_rule": HISTORY_RULE,
+            "shots_on_goal_source": SHOTS_ON_GOAL_SOURCE,
+            "goals_source": GOALS_SOURCE,
             "game_id": current["game_id"],
             "season_id": current["season_id"],
             "scheduled_start_utc": (current["scheduled_start_utc"].isoformat()),
@@ -647,6 +659,8 @@ def build_pregame_rolling_features(
         "source_team_game_path": str(team_game_path),
         "source_team_game_sha256": (source_sha256),
         "history_rule": HISTORY_RULE,
+        "shots_on_goal_source": SHOTS_ON_GOAL_SOURCE,
+        "goals_source": GOALS_SOURCE,
         "status": status,
         "game_count": len(game_counts),
         "row_count": len(output_rows),
