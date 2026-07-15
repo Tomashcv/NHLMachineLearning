@@ -295,6 +295,11 @@ def run_pbp_batch(
                 "score_reconciliation_status": score_status,
                 "applicable_score_reconciliation_passed": (applicable_score_reconciliation_passed),
                 "sog_reconciliation_passed": (canonical_result.sog_reconciliation_passed),
+                "sog_reconciliation_status": (canonical_result.sog_reconciliation_status),
+                "sog_provider_correction_team_id": (
+                    canonical_result.sog_provider_correction_team_id
+                ),
+                "sog_deltas_by_team": (canonical_audit["sog_deltas_by_team"]),
                 "missing_owner_team_core_event_count": (
                     canonical_audit["missing_owner_team_core_event_count"]
                 ),
@@ -305,6 +310,9 @@ def run_pbp_batch(
         )
 
     all_sog_reconciled = all(game["sog_reconciliation_passed"] for game in game_summaries)
+    sog_reconciliation_status_counts = Counter(
+        game["sog_reconciliation_status"] for game in game_summaries
+    )
     all_applicable_scores_reconciled = all(
         game["applicable_score_reconciliation_passed"] for game in game_summaries
     )
@@ -344,6 +352,7 @@ def run_pbp_batch(
         "status": status,
         "processed_game_count": processed_game_count,
         "outcome_counts": dict(sorted(outcome_counts.items())),
+        "sog_reconciliation_status_counts": dict(sorted(sog_reconciliation_status_counts.items())),
         "batch_sha256": batch_digest,
         "gates": gates,
         "games": game_summaries,

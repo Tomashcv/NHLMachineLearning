@@ -421,3 +421,26 @@ by canonical PBP reconciliation.
 
 The sealed-holdout season is inventoried mechanically. Its outcomes remain
 unavailable for model-selection decisions.
+
+## Season-scale PBP batches
+
+The verified 5,248-game inventory is divided into one immutable PBP batch per
+regular season.
+
+Each season config freezes:
+
+- exactly 1,312 game IDs;
+- expected regulation, overtime or shootout outcome;
+- scheduled start timestamp;
+- home and away team IDs;
+- local source filename and source SHA-256;
+- split role;
+- a deterministic hash of the season-specific inventory subset.
+
+Before processing, the config is reconstructed from the verified inventory and
+must match exactly. This prevents a manually edited config from silently
+changing game membership, outcomes or source lineage.
+
+The 2021-22 and 2022-23 batches are development data. The 2023-24 batch is
+validation data. The 2024-25 batch is a sealed holdout and must not influence
+feature, model, calibration or betting-rule selection.
