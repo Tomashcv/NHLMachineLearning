@@ -1,0 +1,106 @@
+{
+  "allowed_loader_splits": [
+    "development",
+    "validation"
+  ],
+  "baselines": {
+    "development_home_win_rate": {
+      "estimated_using": [
+        "20212022",
+        "20222023"
+      ]
+    },
+    "random_50": {
+      "probability": 0.5
+    }
+  },
+  "candidate": {
+    "estimator": {
+      "c": 1.0,
+      "max_iter": 2000,
+      "penalty": "l2",
+      "random_state": 0,
+      "solver": "lbfgs",
+      "type": "logistic_regression"
+    },
+    "feature_count": 15,
+    "feature_schema_sha256": "4c0f1ca229896ea7497c230351c590127b914b85d0c5bf15184112a2f98a1b9e",
+    "features": [
+      "home_season_to_date_games",
+      "away_season_to_date_games",
+      "home_minus_away_days_since_previous_game_start",
+      "home_minus_away_season_to_date_win_rate",
+      "home_minus_away_season_to_date_goals_for_per_game",
+      "home_minus_away_season_to_date_goals_against_per_game",
+      "home_minus_away_season_to_date_shots_on_goal_for_per_game",
+      "home_minus_away_season_to_date_shots_on_goal_against_per_game",
+      "home_minus_away_season_to_date_shot_attempt_share",
+      "home_minus_away_season_to_date_shooting_percentage",
+      "home_minus_away_season_to_date_save_percentage_proxy",
+      "home_minus_away_season_to_date_faceoff_win_percentage",
+      "home_minus_away_season_to_date_penalty_minutes_for_per_game",
+      "home_minus_away_season_to_date_takeaways_for_per_game",
+      "home_minus_away_season_to_date_giveaways_for_per_game"
+    ],
+    "model_name": "logistic_core_diff_v1",
+    "preprocessing": {
+      "add_missing_indicators": true,
+      "imputer": "training_median",
+      "keep_empty_features": true,
+      "scaler": "training_standard_scaler"
+    }
+  },
+  "evaluation": {
+    "acceptance_rule": {
+      "both_primary_rules_required": true,
+      "delta_brier_must_be_below": 0.0,
+      "delta_log_loss_must_be_below": 0.0
+    },
+    "feature_changes_after_validation_allowed": false,
+    "hyperparameter_changes_after_validation_allowed": false,
+    "primary_metrics": [
+      "log_loss",
+      "brier"
+    ],
+    "probability_threshold_tuning_allowed": false,
+    "reference_baseline": "development_home_win_rate",
+    "secondary_metrics": [
+      "ece_10_bin",
+      "accuracy"
+    ],
+    "validation_is_single_use": true
+  },
+  "final_development_seasons": [
+    "20212022",
+    "20222023"
+  ],
+  "interpretation_policy": {
+    "negative_result_is_acceptable": true,
+    "no_odds_loaded": true,
+    "no_roi_or_profit_calculated": true,
+    "validation_success_does_not_establish_market_edge": true
+  },
+  "market_baseline_available": false,
+  "profitability_claims_allowed": false,
+  "protocol_content_sha256": "b103413a24e0fd4169a10999c0af435a5960ccfd549e8a830b91db91b1017f0b",
+  "protocol_id": "nhl_moneyline_validation_protocol_v1",
+  "research_mode": "research_only",
+  "schema_version": "1.0",
+  "sealed_holdout_must_remain_locked": true,
+  "sealed_holdout_season": "20242025",
+  "selection_evidence": {
+    "protocol_id": "nhl_moneyline_baseline_selection_v1",
+    "report_path": "storage/reports/local/moneyline/baseline_selection_20222023.json",
+    "report_sha256": "80ff6ab284f5c0cfd93cf3792d3c55d2c8ce24578b2900c44e0e13fa1502b235",
+    "selection_season": "20222023",
+    "train_season": "20212022"
+  },
+  "source_bundle": {
+    "audit_path": "storage/audits/local/season_scale/experiment_dataset_bundle_2021_2025.json",
+    "audit_sha256": "96511c93f233f47e336d1902098a191de9577bc20912a9cce46364e9914b2e0e",
+    "bundle_id": "nhl_regular_season_2021_2025_experiment_bundle_v1",
+    "feature_columns_sha256": "30873c082d650c745f7bcfbc18c35216508d7275ffe4dfd87059a09a8c4be3e3"
+  },
+  "status": "frozen_before_validation",
+  "validation_season": "20232024"
+}
